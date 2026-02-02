@@ -6,60 +6,38 @@ from agents.anomaly_agent import detect_anomalies
 from agents.insight_agent import generate_insights
 from agents.profiling_agent import generate_profile
 from agents.visualization_agent import generate_plots
+from agents.automl_agent import run_automl
 import os
 
-app = FastAPI(title="AI Data Analysis Agent")
+app = FastAPI(title="ScaleDown Data Science Agent")
 
-# Home endpoint
-@app.get("/")
-def home():
-    return {"message": "Welcome to AI Data Analysis Agent. Use POST /analyze to upload CSV."}
-
-# Analyze endpoint
-@app.post("/analyze")
+@app.post("/api/analyze")
 async def analyze(file: UploadFile = File(...)):
-    # Step 1: Load CSV
     content = await file.read()
     df = load_csv(content)
 
-    # Step 2: Generate profiling report
-    if not os.path.exists("reports"):
-        os.makedirs("reports")
     generate_profile(df)
 
-    # Step 3: Scaledown metadata
     meta = scaledown(df)
+    anomaly_count = detect_anomalies(df)
+    insights = generate_insights(meta, anomaly_count)
+    model_rec = run_automl(df)
 
-    # Step 4: Detect anomalies
-    anomalies = detect_anomalies(df)
-
-    # Step 5: Generate insights
-    insights = generate_insights(meta, anomalies)
-
-    # Step 6: Generate visualizations
     plots = generate_plots(df)
-    # Save plots to files
-    plot_files = []
+    os.makedirs("reports", exist_ok=True)
+
     for i, fig in enumerate(plots):
-        path = f"reports/plot_{i+1}.png"
-        fig.savefig(path)
-        plot_files.append(path)
-        fig.clf()  # clear figure
+        fig.savefig(f"reports/plot_{i+1}.png")
+        fig.clf()
 
     return {
-        "dataset_rows": meta["rows"],
-        "dataset_columns": meta["columns"],
-        "missing_percentage": meta["missing_percentage"],
+        "scale_down_stats": meta,
         "insights": insights,
-        "anomalies_detected": anomalies,
-        "profiling_report": "reports/report.html",
-        "plots": plot_files
+        "anomalies": [f"{anomaly_count} anomalous records detected"],
+        "recommendation": model_rec,
+        "report": "/download_report"
     }
 
-# Endpoint to download profiling report
 @app.get("/download_report")
 def download_report():
-    report_path = "reports/report.html"
-    if os.path.exists(report_path):
-        return FileResponse(report_path, media_type="text/html", filename="report.html")
-    return {"error": "Report not found"}
+    return FileResponse("reports/report.html", media_type="text/html")

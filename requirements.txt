@@ -8,3 +8,5 @@ ydata_profiling
 aiofiles
 seaborn
 matplotlib.pyplot
+sqlalchemy
+io
