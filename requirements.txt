@@ -1,6 +1,6 @@
 fastapi
+uvicorn
 pandas
-numpy
 scikit-learn
-ydata-profiling
+numpy
 python-multipart
