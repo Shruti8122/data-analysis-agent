@@ -1,12 +1,11 @@
 fastapi
 uvicorn
 pandas
-scikit-learn
 numpy
+scikit-learn
 python-multipart
-ydata_profiling
+ydata-profiling
 aiofiles
 seaborn
-matplotlib.pyplot
+matplotlib
 sqlalchemy
-io
